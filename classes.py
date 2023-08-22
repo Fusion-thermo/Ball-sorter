@@ -63,9 +63,8 @@ class Fiole:
         return ""
     def clique(self):
         mouse.position = self.coos
-        #sleep(0.2)
-        #mouse.click(Button.left)
-        #print(self.coos,mouse.position)
+        sleep(0.2)
+        mouse.click(Button.left)
 
     
 class Balles:

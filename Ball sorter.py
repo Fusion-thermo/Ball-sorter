@@ -51,7 +51,6 @@ def solveur(plateau):
         mouvements=[]
         for i in range(plateau.nb_fioles-1):
             for j in range(i+1,plateau.nb_fioles):
-                #print(i,j)
                 #vers la droite : si fiole de départ non vide et si même couleur et si nombre de balles pas plus grand que la capacité de la fiole d'arrivée et si (départ a plus d'une seule couleur ou l'arrivée n'est pas vide)
                 for sens in range(2):
                     if sens==0:
@@ -61,15 +60,12 @@ def solveur(plateau):
                     if plateau.fioles[a].quantite > 0 and plateau.fioles[b].quantite > 0:
                         if plateau.fioles[a].balles[-1].couleur == plateau.fioles[b].balles[-1].couleur and plateau.fioles[a].balles[-1].nombre + plateau.fioles[b].quantite <= plateau.fioles[b].taille:
                             mouvements.append((plateau.fioles[a],plateau.fioles[b]))
-                            if numero_test_actuel>0:
-                                print("{} --> {}".format(a,b))
+                            print("{} --> {}".format(a,b))
                     elif plateau.fioles[a].quantite > 0 and plateau.fioles[b].quantite == 0:
                         if plateau.fioles[a].nb_couleurs>1:
                             mouvements.append((plateau.fioles[a],plateau.fioles[b]))
-                            if numero_test_actuel>0:
-                                print("{} --> {}".format(a,b))
-        if numero_test_actuel>0:
-            plateau.affichage()
+                            print("{} --> {}".format(a,b))
+        plateau.affichage()
         if mouvements==[]:
             for fiole in plateau.fioles:
                 if fiole.nb_couleurs>1 or (fiole.nb_couleurs==1 and fiole.quantite<fiole.taille):
@@ -84,14 +80,13 @@ def solveur(plateau):
                     mouvement_actuel.enfants.append(Mouvement(mouvement_actuel,numero_coup,mouve[0],mouve[1],mouve[0].balles[-1].couleur,mouve[0].balles[-1].nombre,mouve[1].balles[-1].nombre))
                 else:
                     mouvement_actuel.enfants.append(Mouvement(mouvement_actuel,numero_coup,mouve[0],mouve[1],mouve[0].balles[-1].couleur,mouve[0].balles[-1].nombre,0))
-            #affiche_mouvements(mouvements)
             #action
             mouvement_actuel=mouvement_actuel.enfants[0]
             print("choix : ",mouvement_actuel.fiole_depart.affichage(),mouvement_actuel.fiole_arrivee.affichage(),"\n")
             mouvement_actuel.jouer()
             
         if defaite:
-            print("??????????","PERDU",numero_test_actuel)
+            print("PERDU",numero_test_actuel)
             defaite=False
             #1) annuler tous les coups pour revenir à la situation initiale et marquer le parent de cette série de coups du niveau actuel comme "tried"
             #mouvement_actuel.affichage()
@@ -106,9 +101,7 @@ def solveur(plateau):
             #2.5) s'il n'y en a pas le niveau augmente de 1 et chercher un mouvement du nouveau niveau 
             if type(nouveau_mouvement) is not Mouvement:
                 numero_test_actuel+=1
-                print("!!!!!!!!!!!!!!!!!  ",numero_test_actuel)
                 nouveau_mouvement=recherche_mouvement(mouvements_possibles,numero_test_actuel)
-            print('nouveau mouvement',nouveau_mouvement.affichage())
             #3) reprendre à partir de là,
             #ce qui veut dire refaire les coups qui ont mené à ce nouveau mouvement depuis le début, puis jouer le mouvement
             rejouer=[nouveau_mouvement]
@@ -118,20 +111,7 @@ def solveur(plateau):
                 mouvement_actuel=mouvement_actuel.parent
                 rejouer.append(mouvement_actuel)
             rejouer.reverse()
-            #print(numero_test_actuel,len(rejouer))
-            #for i in range(18):
-             #   print(i,mouvements_possibles.enfants[i].numero_du_coup, len(mouvements_possibles.enfants[i].enfants), [enfant.numero_du_coup for enfant in mouvements_possibles.enfants[i].enfants])
             for mouve in rejouer:
-                baal=mouve.parent
-                try:
-                    print("coup précédent",baal.affichage())
-                except:
-                    print('erreur coup précédent : mouvement 0')
-                print("coup en cours",mouve.fiole_depart.affichage(),mouve.fiole_arrivee.affichage(),mouve.numero_du_coup,mouve.couleur_depart,mouve.nombre_depart,mouve.nombre_arrivee)
-            f=-1
-            for mouve in rejouer:
-                f+=1
-                #print(f)
                 mouve.jouer()
             mouvement_actuel=rejouer[-1]
             numero_coup=numero_test_actuel
@@ -145,31 +125,35 @@ def initialisation_plateau(plateau):
     im = ImageGrab.grab(bbox =(968,441,1768,1464))
     #im.show()
     px=im.load()
-    #haut avec 6 fioles
-    x0,y0=69,130
-    decalage_x=130
     decalage_y=89
-    for x in range(6):
-        #img= ImageGrab.grab(bbox =(x02+x*decalage_x,y02,x02+(x+1)*decalage_x,y02+3*decalage_y))
+    #haut
+    if plateau.n_fioles_haut==6:
+        x0,y0=69,130
+        decalage_x=130
+    elif plateau.n_fioles_haut==5:
+        x0,y0=91,130
+        decalage_x=151.75
+    for x in range(plateau.n_fioles_haut):
         plateau.ajouter_fiole(Fiole((968+x0+x*decalage_x,441+y0),4))
         for y in range(4):
             couleur=px[x0+x*decalage_x,y0+y*decalage_y]
             for color in dico_couleurs.keys():
                 if bonne_couleur(couleur,dico_couleurs[color],0.1):
-                    #print(x,y,color)
                     plateau.fioles[x].initialiser(Balles(color,1))
-    #bas avec 5 fioles
-    x0,y0=96,648
-    decalage_x=151.75
-    for x in range(5):
-        #img= ImageGrab.grab(bbox =(x02+x*decalage_x,y02,x02+(x+1)*decalage_x,y02+3*decalage_y))
+    #bas
+    if plateau.n_fioles_bas==5:
+        x0,y0=96,648
+        decalage_x=151.75
+    elif plateau.n_fioles_bas==4:
+        x0,y0=126,648
+        decalage_x=182
+    for x in range(plateau.n_fioles_bas):
         plateau.ajouter_fiole(Fiole((968+x0+x*decalage_x,441+y0),4))
         for y in range(4):
             couleur=px[x0+x*decalage_x,y0+y*decalage_y]
             for color in dico_couleurs.keys():
                 if bonne_couleur(couleur,dico_couleurs[color],0.1):
-                    #print(x,y,color)
-                    plateau.fioles[6+x].initialiser(Balles(color,1))
+                    plateau.fioles[plateau.n_fioles_haut+x].initialiser(Balles(color,1))
     return plateau
     
 
@@ -186,6 +170,6 @@ while mouvements_solution.numero_du_coup>0:
 ordre.reverse()
 for mouvement in ordre:
     mouvement.fiole_depart.clique()
-    sleep(0.5)
+    sleep(0.3)
     mouvement.fiole_arrivee.clique()
-    sleep(0.5)
+    sleep(0.3)
