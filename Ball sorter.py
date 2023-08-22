@@ -1,8 +1,5 @@
 from PIL import Image, ImageGrab
 import numpy as np
-from time import sleep,time
-import pyautogui #for absolutely no apparent reason removing this breaks the program, the positioning doesn't go where it is supposed to go.
-from pynput.mouse import Button, Controller
 from classes import *
 
 def affiche_mouvements(mouvs):
@@ -19,21 +16,35 @@ def priorite_mouvements(mouve):
     score=0
     if arrivee.quantite>0:
         #règle 1 : se rejoindre dans le tube avec le moins de balles d'une autre couleur
-        score+=len(arrivee.balles)
+        score+=10 * arrivee.nb_couleurs
+        #règle esthétique : les balles de 1 rejoignent les balles de 3 et pas l'inverse
+        score+=depart.quantite - arrivee.quantite
     else:
         #règle 2 : arrivée vide
-        score+=100
+        score+=1000
     
     return score
 
-def solveur():
+def recherche_mouvement(mouvement,numero_voulu):
+    #fonction récursive cherchant un mouvement non essayé pour un niveau de test donné.
+    if mouvement.numero_du_coup < numero_voulu:
+        for mouve in mouvement.enfants:
+            retour=recherche_mouvement(mouve,numero_voulu)
+            if type(retour) is Mouvement:
+                return retour
+    if mouvement.tried==False:# and mouvement.numero_du_coup==numero_voulu
+        return mouvement
+    return None
+
+def solveur(plateau):
     victoire=False
     defaite=False
     numero_coup=0
-    mouvements_possibles=Mouvement(None,0,None)
+    mouvements_possibles=Mouvement(None,0,None,None,None,None,None)
+    mouvements_possibles.tried=True
     mouvement_actuel=mouvements_possibles
     #le niveau des coups que l'on essaie : d'abord tous les premiers coups possibles, puis les 2è etc
-    numero_actuel=1
+    numero_test_actuel=1
     while not victoire:
         numero_coup+=1
         #mouvements possibles
@@ -47,83 +58,134 @@ def solveur():
                         a,b=i,j
                     else:
                         a,b=j,i
-                    if a==1 and b==9:
-                        c=9
                     if plateau.fioles[a].quantite > 0 and plateau.fioles[b].quantite > 0:
                         if plateau.fioles[a].balles[-1].couleur == plateau.fioles[b].balles[-1].couleur and plateau.fioles[a].balles[-1].nombre + plateau.fioles[b].quantite <= plateau.fioles[b].taille:
                             mouvements.append((plateau.fioles[a],plateau.fioles[b]))
-                            print("{} --> {}".format(a,b))
+                            if numero_test_actuel>0:
+                                print("{} --> {}".format(a,b))
                     elif plateau.fioles[a].quantite > 0 and plateau.fioles[b].quantite == 0:
                         if plateau.fioles[a].nb_couleurs>1:
                             mouvements.append((plateau.fioles[a],plateau.fioles[b]))
-                            print("{} --> {}".format(a,b))
-        plateau.affichage()
+                            if numero_test_actuel>0:
+                                print("{} --> {}".format(a,b))
+        if numero_test_actuel>0:
+            plateau.affichage()
         if mouvements==[]:
             for fiole in plateau.fioles:
-                if fiole.nb_couleurs>1:
+                if fiole.nb_couleurs>1 or (fiole.nb_couleurs==1 and fiole.quantite<fiole.taille):
                     defaite=True
-            victoire=True
+                    break
+            if not defaite:
+                victoire=True
         else:
             mouvements.sort(key=priorite_mouvements)
             for mouve in mouvements:
-                mouvement_actuel.enfants.append(Mouvement(mouvement_actuel,numero_coup,mouve))
+                if mouve[1].quantite>0:
+                    mouvement_actuel.enfants.append(Mouvement(mouvement_actuel,numero_coup,mouve[0],mouve[1],mouve[0].balles[-1].couleur,mouve[0].balles[-1].nombre,mouve[1].balles[-1].nombre))
+                else:
+                    mouvement_actuel.enfants.append(Mouvement(mouvement_actuel,numero_coup,mouve[0],mouve[1],mouve[0].balles[-1].couleur,mouve[0].balles[-1].nombre,0))
             #affiche_mouvements(mouvements)
             #action
-            choisi=mouvements[0]
-            choisi[1].ajouter(choisi[0].balles[-1])
-            choisi[0].retirer()
             mouvement_actuel=mouvement_actuel.enfants[0]
+            print("choix : ",mouvement_actuel.fiole_depart.affichage(),mouvement_actuel.fiole_arrivee.affichage(),"\n")
+            mouvement_actuel.jouer()
+            
         if defaite:
-            #1) marquer le parent de cette série de coups du niveau actuel comme "tried"
+            print("??????????","PERDU",numero_test_actuel)
+            defaite=False
+            #1) annuler tous les coups pour revenir à la situation initiale et marquer le parent de cette série de coups du niveau actuel comme "tried"
+            #mouvement_actuel.affichage()
+            while mouvement_actuel.numero_du_coup>0:
+                if mouvement_actuel.numero_du_coup==numero_test_actuel:
+                    mouvement_actuel.tried=True
+                mouvement_actuel.inverser()
+                mouvement_actuel=mouvement_actuel.parent
+            #plateau.affichage()
             #2) chercher un autre mouvement du même niveau non tried
-            #2.1) s'il n'y en a pas le niveau augmente de 1
-            #3) chercher un mouvement du nouveau niveau et reprendre à partir de là,
-            #ce qui veut dire refaire les coups qui mènent à ce niveau
+            nouveau_mouvement=recherche_mouvement(mouvements_possibles,numero_test_actuel)
+            #2.5) s'il n'y en a pas le niveau augmente de 1 et chercher un mouvement du nouveau niveau 
+            if type(nouveau_mouvement) is not Mouvement:
+                numero_test_actuel+=1
+                print("!!!!!!!!!!!!!!!!!  ",numero_test_actuel)
+                nouveau_mouvement=recherche_mouvement(mouvements_possibles,numero_test_actuel)
+            print('nouveau mouvement',nouveau_mouvement.affichage())
+            #3) reprendre à partir de là,
+            #ce qui veut dire refaire les coups qui ont mené à ce nouveau mouvement depuis le début, puis jouer le mouvement
+            rejouer=[nouveau_mouvement]
+
+            mouvement_actuel=nouveau_mouvement
+            while mouvement_actuel.numero_du_coup>1:
+                mouvement_actuel=mouvement_actuel.parent
+                rejouer.append(mouvement_actuel)
+            rejouer.reverse()
+            #print(numero_test_actuel,len(rejouer))
+            #for i in range(18):
+             #   print(i,mouvements_possibles.enfants[i].numero_du_coup, len(mouvements_possibles.enfants[i].enfants), [enfant.numero_du_coup for enfant in mouvements_possibles.enfants[i].enfants])
+            for mouve in rejouer:
+                baal=mouve.parent
+                try:
+                    print("coup précédent",baal.affichage())
+                except:
+                    print('erreur coup précédent : mouvement 0')
+                print("coup en cours",mouve.fiole_depart.affichage(),mouve.fiole_arrivee.affichage(),mouve.numero_du_coup,mouve.couleur_depart,mouve.nombre_depart,mouve.nombre_arrivee)
+            f=-1
+            for mouve in rejouer:
+                f+=1
+                #print(f)
+                mouve.jouer()
+            mouvement_actuel=rejouer[-1]
+            numero_coup=numero_test_actuel
+    
+    return mouvement_actuel
             
 
+def initialisation_plateau(plateau):
+    dico_couleurs={"orange":(215, 111, 0),"cyan":(7, 162, 124),"magenta":(131, 3, 156),"jaune":(208, 187, 0),"rouge":(174, 0, 0),"bleu":(1, 90, 174),"gris":(140, 140, 140),"violet":(90, 12, 164),"vert":(3, 142, 0)}
+    sleep(2)
+    im = ImageGrab.grab(bbox =(968,441,1768,1464))
+    #im.show()
+    px=im.load()
+    #haut avec 6 fioles
+    x0,y0=69,130
+    decalage_x=130
+    decalage_y=89
+    for x in range(6):
+        #img= ImageGrab.grab(bbox =(x02+x*decalage_x,y02,x02+(x+1)*decalage_x,y02+3*decalage_y))
+        plateau.ajouter_fiole(Fiole((968+x0+x*decalage_x,441+y0),4))
+        for y in range(4):
+            couleur=px[x0+x*decalage_x,y0+y*decalage_y]
+            for color in dico_couleurs.keys():
+                if bonne_couleur(couleur,dico_couleurs[color],0.1):
+                    #print(x,y,color)
+                    plateau.fioles[x].initialiser(Balles(color,1))
+    #bas avec 5 fioles
+    x0,y0=96,648
+    decalage_x=151.75
+    for x in range(5):
+        #img= ImageGrab.grab(bbox =(x02+x*decalage_x,y02,x02+(x+1)*decalage_x,y02+3*decalage_y))
+        plateau.ajouter_fiole(Fiole((968+x0+x*decalage_x,441+y0),4))
+        for y in range(4):
+            couleur=px[x0+x*decalage_x,y0+y*decalage_y]
+            for color in dico_couleurs.keys():
+                if bonne_couleur(couleur,dico_couleurs[color],0.1):
+                    #print(x,y,color)
+                    plateau.fioles[6+x].initialiser(Balles(color,1))
+    return plateau
+    
 
-    if victoire:
-        print('gagné')
-    else:
-        print('perdu')
-
-def initialisation_plateau():
-        dico_couleurs={"orange":(215, 111, 0),"cyan":(7, 162, 124),"magenta":(131, 3, 156),"jaune":(208, 187, 0),"rouge":(174, 0, 0),"bleu":(1, 90, 174),"gris":(140, 140, 140),"violet":(90, 12, 164),"vert":(3, 142, 0)}
-        sleep(2)
-        im = ImageGrab.grab(bbox =(968,441,1768,1464))
-        #im.show()
-        px=im.load()
-        #haut avec 6 fioles
-        x0,y0=69,130
-        x02,y02=1038,568
-        decalage_x=130
-        decalage_y=89
-        for x in range(6):
-            #img= ImageGrab.grab(bbox =(x02+x*decalage_x,y02,x02+(x+1)*decalage_x,y02+3*decalage_y))
-            plateau.ajouter_fiole(Fiole((x0+x*decalage_x,y0),4))
-            for y in range(4):
-                couleur=px[x0+x*decalage_x,y0+y*decalage_y]
-                for color in dico_couleurs.keys():
-                    if bonne_couleur(couleur,dico_couleurs[color],0.1):
-                        #print(x,y,color)
-                        plateau.fioles[x].initialiser(Balles(color,1))
-        #bas avec 5 fioles
-        x0,y0=96,648
-        x02,y02=1038,568
-        decalage_x=151.75
-        for x in range(5):
-            #img= ImageGrab.grab(bbox =(x02+x*decalage_x,y02,x02+(x+1)*decalage_x,y02+3*decalage_y))
-            plateau.ajouter_fiole(Fiole((x0+x*decalage_x,y0),4))
-            for y in range(4):
-                couleur=px[x0+x*decalage_x,y0+y*decalage_y]
-                for color in dico_couleurs.keys():
-                    if bonne_couleur(couleur,dico_couleurs[color],0.1):
-                        #print(x,y,color)
-                        plateau.fioles[6+x].initialiser(Balles(color,1))
-                    
-
-# plateau=Plateau(6,5)
-# initialisation_plateau()
-# plateau.affichage()
-plateau_original=plateau.copy()
-solveur()
+plateau=Plateau(6,5)
+plateau=initialisation_plateau(plateau)
+plateau.affichage()
+mouvements_solution=solveur(plateau)
+print("victoire")
+#exécution des coups
+ordre=[]
+while mouvements_solution.numero_du_coup>0:
+    ordre.append(mouvements_solution)
+    mouvements_solution=mouvements_solution.parent
+ordre.reverse()
+for mouvement in ordre:
+    mouvement.fiole_depart.clique()
+    sleep(0.5)
+    mouvement.fiole_arrivee.clique()
+    sleep(0.5)
