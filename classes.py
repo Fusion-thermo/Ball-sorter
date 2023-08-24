@@ -19,9 +19,10 @@ class Plateau:
 mouse = Controller()
 
 class Fiole:
-    def __init__(self,coos,taille):
+    def __init__(self,coos,taille,numero):
         self.coos=coos
         self.taille=taille
+        self.numero=numero
         self.quantite=0
         self.nb_couleurs=0
         #fin de la liste = haut de la fiole
@@ -42,7 +43,7 @@ class Fiole:
         self.quantite-=self.balles[-1].nombre
         self.nb_couleurs-=1
         self.balles.pop()
-    def initialiser(self,balles):
+    def initialiser(self,balles,fini):
         if self.quantite>0:
             if self.balles[-1].couleur==balles.couleur:
                 new=Balles(balles.couleur,balles.nombre+self.balles[-1].nombre)
@@ -55,7 +56,7 @@ class Fiole:
             self.balles.append(balles)
             self.nb_couleurs=1
         self.quantite+=balles.nombre
-        if self.quantite==self.taille:
+        if fini:
             #parce qu'elles sont ajoutées du haut vers le bas
             self.balles.reverse()
     def affichage(self,numero=""):
@@ -65,6 +66,11 @@ class Fiole:
         mouse.position = self.coos
         sleep(0.2)
         mouse.click(Button.left)
+    def reset(self):
+        self.quantite=0
+        self.nb_couleurs=0
+        self.balles=[]
+
 
     
 class Balles:
@@ -146,4 +152,28 @@ plateau.fioles[2].quantite,plateau.fioles[2].nb_couleurs = 2,2
 # plateau.fioles[7].quantite,plateau.fioles[7].nb_couleurs = 4,4
 # plateau.fioles[8].balles=[Balles('magenta', 1), Balles('rouge', 2), Balles('cyan', 1)]
 # plateau.fioles[8].quantite,plateau.fioles[8].nb_couleurs = 4,3
+#les deux dernières sont vides
+
+#Jeu de test caché : 
+# plateau=Plateau(6,5)
+# for i in range(11):
+#     plateau.fioles.append(Fiole((0,0),4))
+# plateau.fioles[0].balles=[Balles('caché', 1), Balles('gris', 1)]
+# plateau.fioles[0].quantite,plateau.fioles[0].nb_couleurs = 4,2
+# plateau.fioles[1].balles=[Balles('caché', 1), Balles('rouge', 1)]
+# plateau.fioles[1].quantite,plateau.fioles[1].nb_couleurs = 4,2
+# plateau.fioles[2].balles=[Balles('caché', 3), Balles('magenta', 1)]
+# plateau.fioles[2].quantite,plateau.fioles[2].nb_couleurs = 4,2
+# plateau.fioles[3].balles=[Balles('caché', 1), Balles('magenta', 1)]
+# plateau.fioles[3].quantite,plateau.fioles[3].nb_couleurs = 4,2
+# plateau.fioles[4].balles=[Balles('caché', 1), Balles('orange', 1)]
+# plateau.fioles[4].quantite,plateau.fioles[4].nb_couleurs = 4,2
+# plateau.fioles[5].balles=[Balles('caché', 1), Balles('jaune', 1)]
+# plateau.fioles[5].quantite,plateau.fioles[5].nb_couleurs = 4,2
+# plateau.fioles[6].balles=[Balles('caché', 1), Balles('gris', 1)]
+# plateau.fioles[6].quantite,plateau.fioles[6].nb_couleurs = 4,2
+# plateau.fioles[7].balles=[Balles('caché', 1), Balles('rouge', 1)]
+# plateau.fioles[7].quantite,plateau.fioles[7].nb_couleurs = 4,2
+# plateau.fioles[8].balles=[Balles('caché', 1), Balles('violet', 2)]
+# plateau.fioles[8].quantite,plateau.fioles[8].nb_couleurs = 4,2
 #les deux dernières sont vides
