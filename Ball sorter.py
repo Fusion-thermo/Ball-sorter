@@ -95,7 +95,7 @@ def solveur(plateau):
             mouvement_actuel.jouer()
             
         if defaite:
-            print("PERDU",numero_test_actuel)
+            print("PERDU, Profondeur de test des mouvements :",numero_test_actuel)
             defaite=False
             #1) annuler tous les coups pour revenir à la situation initiale et marquer le parent de cette série de coups du niveau actuel comme "tried"
             #mouvement_actuel.affichage()
@@ -192,7 +192,7 @@ def solveur_hidden(plateau):
             sleep(0.3)
                         
         if defaite:
-            print("PERDU",numero_test_actuel)
+            print("PERDU, Profondeur de test des mouvements :",numero_test_actuel)
             defaite=False
             #1) annuler tous les coups pour revenir à la situation initiale et marquer le parent de cette série de coups du niveau actuel comme "tried"
             #mouvement_actuel.affichage()
@@ -253,7 +253,6 @@ def modif_plateau_hidden(plateau):
             if y==3:
                 fini=True
             couleur=px[x0+x*decalage_x,y0+y*decalage_y]
-            #print(couleur)
             if bonne_couleur(couleur,dico_couleurs["gris"],0.1) or bonne_couleur(couleur,dico_couleurs["caché"],0.1):
                 #test au cas par cas, caché est plus sombre que le gris normal
                 if abs(mean(couleur)-mean(dico_couleurs["gris"])) > abs(mean(couleur)-mean(dico_couleurs["caché"])):
@@ -278,7 +277,6 @@ def modif_plateau_hidden(plateau):
             if y==3:
                 fini=True
             couleur=px[x0+x*decalage_x,y0+y*decalage_y]
-            #print(couleur)
             if bonne_couleur(couleur,dico_couleurs["gris"],0.1) or bonne_couleur(couleur,dico_couleurs["caché"],0.1):
                 #test au cas par cas, caché est plus sombre que le gris normal
                 if abs(mean(couleur)-mean(dico_couleurs["gris"])) > abs(mean(couleur)-mean(dico_couleurs["caché"])):
@@ -312,7 +310,6 @@ def initialisation_plateau(plateau,hidden):
             if y==3:
                 fini=True
             couleur=px[x0+x*decalage_x,y0+y*decalage_y]
-            #print(couleur)
             if bonne_couleur(couleur,dico_couleurs["gris"],0.1) or bonne_couleur(couleur,dico_couleurs["caché"],0.1):
                 #test au cas par cas, caché est plus sombre que le gris normal
                 if abs(mean(couleur)-mean(dico_couleurs["gris"])) > abs(mean(couleur)-mean(dico_couleurs["caché"])):
@@ -337,7 +334,6 @@ def initialisation_plateau(plateau,hidden):
             if y==3:
                 fini=True
             couleur=px[x0+x*decalage_x,y0+y*decalage_y]
-            #print(couleur)
             if bonne_couleur(couleur,dico_couleurs["gris"],0.1) or bonne_couleur(couleur,dico_couleurs["caché"],0.1):
                 #test au cas par cas, caché est plus sombre que le gris normal
                 if abs(mean(couleur)-mean(dico_couleurs["gris"])) > abs(mean(couleur)-mean(dico_couleurs["caché"])):
